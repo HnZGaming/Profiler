@@ -160,6 +160,8 @@
     <Compile Include="Basics\GameLoopProfiler.cs" />
     <Compile Include="Basics\SessionComponentsProfiler.cs" />
     <Compile Include="Basics\UserScriptProfiler.cs" />
+    <Compile Include="Core.Patches\FixedLoop_Run.cs" />
+    <Compile Include="Core.Patches\Game_RunSingleFrame.cs" />
     <Compile Include="Core.Patches\Game_UpdateInternal.cs" />
     <Compile Include="Core.Patches\MyEntity_Transpile.cs" />
     <Compile Include="Core.Patches\MyDistributedUpdater_Iterate.cs" />

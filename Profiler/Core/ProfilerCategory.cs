@@ -12,5 +12,7 @@
         UpdateSessionComponents,
         UpdateSessionComponentsAll,
         UpdateGps,
+        Lock,
+        Frame,
     }
 }

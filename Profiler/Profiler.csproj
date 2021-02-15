@@ -155,6 +155,7 @@
     <Compile Include="Basics\GameEntityMask.cs" />
     <Compile Include="Basics\GridProfiler.cs" />
     <Compile Include="Basics\MethodNameProfiler.cs" />
+    <Compile Include="Basics\NetworkEventProfiler.cs" />
     <Compile Include="Basics\PlayerProfiler.cs" />
     <Compile Include="Basics\ProfilerEntry.cs" />
     <Compile Include="Basics\GameLoopProfiler.cs" />
@@ -163,6 +164,7 @@
     <Compile Include="Core.Patches\FixedLoop_Run.cs" />
     <Compile Include="Core.Patches\Game_RunSingleFrame.cs" />
     <Compile Include="Core.Patches\Game_UpdateInternal.cs" />
+    <Compile Include="Core.Patches\MyDedicatedServerBase_ClientConnected.cs" />
     <Compile Include="Core.Patches\MyEntity_Transpile.cs" />
     <Compile Include="Core.Patches\MyDistributedUpdater_Iterate.cs" />
     <Compile Include="Core.Patches\MyGameLogic_Update.cs" />
@@ -171,6 +173,12 @@
     <Compile Include="Core.Patches\MyParallelEntityUpdateOrchestrator_Transpile.cs" />
     <Compile Include="Core.Patches\MyPlayerCollection_SendDirtyBlockLimits.cs" />
     <Compile Include="Core.Patches\MyProgrammableBlock_RunSandboxedProgramAction.cs" />
+    <Compile Include="Core.Patches\MyMultiplayerServerBase_ClientReady.cs" />
+    <Compile Include="Core.Patches\MyReplicationServer_OnClientAcks.cs" />
+    <Compile Include="Core.Patches\MyReplicationServer_OnClientUpdate.cs" />
+    <Compile Include="Core.Patches\MyReplicationLayer_OnEvent.cs" />
+    <Compile Include="Core.Patches\MyReplicationServer_ReplicableReady.cs" />
+    <Compile Include="Core.Patches\MyReplicationServer_ReplicableRequest.cs" />
     <Compile Include="Core.Patches\MyReplicationServer_UpdateAfter.cs" />
     <Compile Include="Core.Patches\MyReplicationServer_UpdateBefore.cs" />
     <Compile Include="Core.Patches\MyGameService_Update.cs" />

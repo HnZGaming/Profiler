@@ -36,6 +36,15 @@ namespace Profiler.Core
                     MyTransportLayer_Tick.Patch(ctx);
                     MyGameService_Update.Patch(ctx);
                     MyNetworkReader_Process.Patch(ctx);
+                    {
+                        MyDedicatedServerBase_ClientConnected.Patch(ctx);
+                        MyMultiplayerServerBase_ClientReady.Patch(ctx);
+                        MyReplicationServer_OnClientAcks.Patch(ctx);
+                        MyReplicationServer_OnClientUpdate.Patch(ctx);
+                        MyReplicationServer_ReplicableReady.Patch(ctx);
+                        MyReplicationServer_ReplicableRequest.Patch(ctx);
+                        MyReplicationLayer_OnEvent.Patch(ctx);
+                    }
                     MyDedicatedServer_ReportReplicatedObjects.Patch(ctx);
                     {
                         MySession_Update_Transpile.Patch(ctx);

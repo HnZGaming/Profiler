@@ -56,8 +56,8 @@ namespace Profiler.Core.Patches
         {
             if (!MethodIndices.TryGetValue(site.Id, out var methodIndex))
             {
-                var siteName = site.MethodInfo.Name;
-                methodIndex = StringIndexer.Instance.IndexOf(siteName);
+                var methodName = $"{Type.FullName}#OnEvent_{site.MethodInfo.Name}";
+                methodIndex = StringIndexer.Instance.IndexOf(methodName);
                 MethodIndices.Add(site.Id, methodIndex);
             }
 

@@ -176,7 +176,7 @@
     <Compile Include="Core.Patches\MyMultiplayerServerBase_ClientReady.cs" />
     <Compile Include="Core.Patches\MyReplicationServer_OnClientAcks.cs" />
     <Compile Include="Core.Patches\MyReplicationServer_OnClientUpdate.cs" />
-    <Compile Include="Core.Patches\MyReplicationLayer_OnEvent.cs" />
+    <Compile Include="Core.Patches\MyReplicationServer_OnEvent.cs" />
     <Compile Include="Core.Patches\MyReplicationServer_ReplicableReady.cs" />
     <Compile Include="Core.Patches\MyReplicationServer_ReplicableRequest.cs" />
     <Compile Include="Core.Patches\MyReplicationServer_UpdateAfter.cs" />

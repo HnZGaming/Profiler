@@ -43,7 +43,7 @@ namespace Profiler.Core
                         MyReplicationServer_OnClientUpdate.Patch(ctx);
                         MyReplicationServer_ReplicableReady.Patch(ctx);
                         MyReplicationServer_ReplicableRequest.Patch(ctx);
-                        MyReplicationLayer_OnEvent.Patch(ctx);
+                        MyReplicationServer_OnEvent.Patch(ctx);
                     }
                     MyDedicatedServer_ReportReplicatedObjects.Patch(ctx);
                     {

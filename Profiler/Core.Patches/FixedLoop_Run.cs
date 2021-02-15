@@ -18,14 +18,14 @@ namespace Profiler.Core.Patches
         static readonly ILogger Log = LogManager.GetCurrentClassLogger();
         static readonly Type SelfType = typeof(FixedLoop_Run);
         static readonly Type Type = typeof(FixedLoop);
-        static readonly MethodInfo Method = Type.InstanceMethod(nameof(FixedLoop.Run));
+        static readonly MethodInfo Method = Type.GetInstanceMethod(nameof(FixedLoop.Run));
         static readonly int MethodIndex = StringIndexer.Instance.IndexOf($"{Type.FullName}#{Method.Name}");
-        static readonly MethodInfo StartTokenFunc = SelfType.StaticMethod(nameof(StartToken));
+        static readonly MethodInfo StartTokenFunc = SelfType.GetStaticMethod(nameof(StartToken));
 
         public static void Patch(PatchContext ctx)
         {
             var actionMethod = FindAction(Method);
-            var transpiler = SelfType.StaticMethod(nameof(Transpile));
+            var transpiler = SelfType.GetStaticMethod(nameof(Transpile));
             ctx.GetPattern(actionMethod).PostTranspilers.Add(transpiler);
         }
 

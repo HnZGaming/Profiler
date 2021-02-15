@@ -14,7 +14,7 @@ namespace Profiler.Core
     {
         static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-        public static readonly MethodInfo StopTokenFunc = typeof(ProfilerPatch).StaticMethod(nameof(StopToken));
+        public static readonly MethodInfo StopTokenFunc = typeof(ProfilerPatch).GetStaticMethod(nameof(StopToken));
         public static bool Enabled { get; set; } = true;
 
         public static void Patch(PatchContext ctx)

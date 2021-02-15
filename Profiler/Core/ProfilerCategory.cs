@@ -6,6 +6,7 @@
         Scripts,
         Update,
         UpdateNetwork,
+        UpdateNetworkEvent,
         UpdateReplication,
         UpdateParallelWait,
         UpdateParallelRun,

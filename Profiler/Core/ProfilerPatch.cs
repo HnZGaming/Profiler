@@ -56,6 +56,10 @@ namespace Profiler.Core
                         MyGpsCollection_Update.Patch(ctx);
                         MyReplicationServer_UpdateAfter.Patch(ctx);
                         MyDedicatedServer_Tick.Patch(ctx);
+                        {
+                            MyReplicationServer_SendUpdate.Patch(ctx);
+                            
+                        }
                         MyPlayerCollection_SendDirtyBlockLimits.Patch(ctx);
                     }
                 }

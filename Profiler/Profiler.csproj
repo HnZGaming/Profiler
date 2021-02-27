@@ -179,6 +179,7 @@
     <Compile Include="Core.Patches\MyReplicationServer_OnEvent.cs" />
     <Compile Include="Core.Patches\MyReplicationServer_ReplicableReady.cs" />
     <Compile Include="Core.Patches\MyReplicationServer_ReplicableRequest.cs" />
+    <Compile Include="Core.Patches\MyReplicationServer_SendUpdate.cs" />
     <Compile Include="Core.Patches\MyReplicationServer_UpdateAfter.cs" />
     <Compile Include="Core.Patches\MyReplicationServer_UpdateBefore.cs" />
     <Compile Include="Core.Patches\MyGameService_Update.cs" />

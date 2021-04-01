@@ -38,7 +38,7 @@ namespace Profiler.Core
                 _canceller?.Dispose();
                 _canceller = new CancellationTokenSource();
 
-                ThreadPool.QueueUserWorkItem(_ =>
+                ParallelTasks.Parallel.StartBackground(() =>
                 {
                     try
                     {

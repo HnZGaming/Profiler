@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using NLog;
 using Profiler.Core.Patches;
@@ -58,7 +59,6 @@ namespace Profiler.Core
                         MyDedicatedServer_Tick.Patch(ctx);
                         {
                             MyReplicationServer_SendUpdate.Patch(ctx);
-                            
                         }
                         MyPlayerCollection_SendDirtyBlockLimits.Patch(ctx);
                     }
@@ -73,18 +73,34 @@ namespace Profiler.Core
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static ProfilerToken? StartToken(object caller, int methodIndex, ProfilerCategory category)
         {
-            if (!Enabled) return null;
-            return new ProfilerToken(caller, methodIndex, category);
+            try
+            {
+                if (!Enabled) return null;
+                return new ProfilerToken(caller, methodIndex, category);
+            }
+            catch (Exception e)
+            {
+                var method = StringIndexer.Instance.StringAt(methodIndex);
+                Log.Error($"{e} caller: {caller}, method: {method}, category: {category}");
+                return null;
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void StopToken(in ProfilerToken? tokenOrNull)
         {
-            if (!Enabled) return;
-            if (!(tokenOrNull is ProfilerToken token)) return;
+            try
+            {
+                if (!Enabled) return;
+                if (!(tokenOrNull is ProfilerToken token)) return;
 
-            var result = new ProfilerResult(token);
-            ProfilerResultQueue.Enqueue(result);
+                var result = new ProfilerResult(token);
+                ProfilerResultQueue.Enqueue(result);
+            }
+            catch (Exception e)
+            {
+                Log.Error($"{e}; token: {tokenOrNull?.ToString() ?? "no token"}");
+            }
         }
     }
 }

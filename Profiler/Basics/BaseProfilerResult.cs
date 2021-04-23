@@ -16,7 +16,17 @@ namespace Profiler.Basics
         {
             TotalFrameCount = totalFrameCount;
             TotalTime = totalTime;
-            _entities = self;
+
+            // copy here so that we wont have concurrency issues down the road
+            // https://stackoverflow.com/questions/11692389
+            var tmpArray = self.ToArray();
+            var entities = new Dictionary<K, ProfilerEntry>();
+            foreach (var (k, v) in tmpArray)
+            {
+                entities.Add(k, v);
+            }
+
+            _entities = entities;
         }
 
         /// <summary>

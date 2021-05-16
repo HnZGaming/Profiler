@@ -1,71 +1,44 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
-using Havok;
-using Profiler.Basics;
+using NLog;
 using Sandbox.Engine.Physics;
-using Sandbox.Engine.Utils;
 using Torch.Managers.PatchManager;
 using Torch.Managers.PatchManager.MSIL;
 using Torch.Utils;
-using VRage;
-using VRage.Library.Utils;
 using VRageMath.Spatial;
 
 namespace Profiler.Core.Patches
 {
     public static class MyPhysics_StepWorlds
     {
-        [ReflectedMethodInfo(typeof(MyPhysics_StepWorlds), nameof(StartToken))]
+        static readonly ILogger Log = LogManager.GetCurrentClassLogger();
+        
 #pragma warning disable 649
-        private static readonly MethodInfo _startTokenMethod;
+        [ReflectedMethodInfo(typeof(MyPhysics_StepWorlds), nameof(StartToken))]
+        static readonly MethodInfo _startTokenMethod;
+        
+        [ReflectedMethodInfo(typeof(MyPhysics_StepWorlds), nameof(StopToken))]
+        static readonly MethodInfo _stopTokenMethod;
 
         [ReflectedMethodInfo(typeof(MyPhysics), "StepWorldsParallel")]
-        private static readonly MethodInfo _stepWorldsParallelMethod;
-
-        [ReflectedMethodInfo(typeof(MyPhysics), "StepWorldsInternal")]
-        private static readonly MethodInfo _stepWorldsMethod;
-
-        [ReflectedMethodInfo(typeof(MyPhysics_StepWorlds), nameof(StepWorldsPrefix))]
-        private static readonly MethodInfo _stepWorldsPrefixMethod;
+        static readonly MethodInfo _stepWorldsParallelMethod;
 
         [ReflectedMethodInfo(typeof(MyPhysics_StepWorlds), nameof(StepWorldsParallelTranspiler))]
-        private static readonly MethodInfo _stepWorldsParallelTranspilerMethod;
+        static readonly MethodInfo _stepWorldsParallelTranspilerMethod;
 #pragma warning restore 649
 
-        private static Action _stepWorldsParallel;
-        
-        private static readonly int MethodIndex = StringIndexer.Instance.IndexOf($"{typeof(MyPhysics).FullName}#StepWorlds");
-        
+        static readonly int MethodIndex = StringIndexer.Instance.IndexOf($"{typeof(MyPhysics).FullName}#StepWorlds");
+
+        public static bool Enabled;
+
         public static void Patch(PatchContext ctx)
         {
-            ctx.GetPattern(_stepWorldsMethod).Prefixes.Add(_stepWorldsPrefixMethod);
             ctx.GetPattern(_stepWorldsParallelMethod).Transpilers.Add(_stepWorldsParallelTranspilerMethod);
         }
 
-        private static bool StepWorldsPrefix(MyPhysics __instance)
-        {
-            _stepWorldsParallel ??= _stepWorldsParallelMethod.CreateDelegate<Action>(__instance);
-            
-            if (ClusterTreeProfiler.Active)
-            {
-                MyPhysics.ProfileHkCall(_stepWorldsParallel);
-            }
-            else
-            {
-                _stepWorldsParallel();
-            }
-            
-            if (HkBaseSystem.IsOutOfMemory)
-            {
-                throw new OutOfMemoryException("Havok run out of memory");
-            }
-            return false;
-        }
-        
-        private static IEnumerable<MsilInstruction> StepWorldsParallelTranspiler(IEnumerable<MsilInstruction> ins, Func<Type, MsilLocal> __localCreator)
+        static IEnumerable<MsilInstruction> StepWorldsParallelTranspiler(IEnumerable<MsilInstruction> ins, Func<Type, MsilLocal> __localCreator)
         {
             var tokenStore = __localCreator(typeof(ProfilerToken?));
             var initFound = false;
@@ -89,7 +62,7 @@ namespace Profiler.Core.Patches
                             yield return new MsilInstruction(OpCodes.Call).InlineValue(_startTokenMethod);
                             // save token to local ver
                             yield return tokenStore.AsValueStore();
-                        
+
                             initFound = true;
                             continue;
                         case "FinishMtStep":
@@ -100,22 +73,46 @@ namespace Profiler.Core.Patches
                             // load saved token
                             yield return tokenStore.AsReferenceLoad();
                             // finish token
-                            yield return new MsilInstruction(OpCodes.Call).InlineValue(ProfilerPatch.StopTokenFunc);
-                        
+                            yield return new MsilInstruction(OpCodes.Call).InlineValue(_stopTokenMethod);
+
                             finishFound = true;
                             continue;
                     }
                 }
+
                 yield return instruction;
             }
 
             if (!initFound || !finishFound)
+            {
                 throw new MissingMemberException();
+            }
         }
 
-        private static ProfilerToken? StartToken(MyClusterTree.MyCluster cluster)
+        static ProfilerToken? StartToken(MyClusterTree.MyCluster cluster)
         {
-            return ProfilerPatch.StartToken(cluster, MethodIndex, ProfilerCategory.General);
+            if (!Enabled) return null;
+
+            Log.Info($"physics profiling starting: {cluster} ({cluster.GetHashCode()})");
+            return ProfilerPatch.StartToken(cluster, MethodIndex, ProfilerCategory.Physics);
+        }
+        
+        static void StopToken(in ProfilerToken? tokenOrNull)
+        {
+            try
+            {
+                if (!Enabled) return;
+                if (!(tokenOrNull is ProfilerToken token)) return;
+
+                var result = new ProfilerResult(token);
+                ProfilerResultQueue.Enqueue(result);
+                
+                Log.Info($"physics profiling ended: {token.GameEntity} ({token.GameEntity.GetHashCode()})");
+            }
+            catch (Exception e)
+            {
+                Log.Error($"{e}; token: {tokenOrNull?.ToString() ?? "no token"}");
+            }
         }
     }
 }

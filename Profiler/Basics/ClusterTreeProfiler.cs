@@ -1,31 +1,45 @@
 ﻿using Profiler.Core;
+using Profiler.Core.Patches;
+using VRage.Collections;
 using VRageMath.Spatial;
 
 namespace Profiler.Basics
 {
-    public class ClusterTreeProfiler : BaseProfiler<MyClusterTree.MyCluster>
+    public sealed class ClusterTreeProfiler : BaseProfiler<MyClusterTree.MyCluster>
     {
-        public static bool Active;
+        static readonly MyConcurrentHashSet<object> _activeProfilers;
+
+        static ClusterTreeProfiler()
+        {
+            _activeProfilers = new MyConcurrentHashSet<object>();
+        }
 
         public ClusterTreeProfiler()
         {
-            Active = true;
-        }
-        protected override bool TryAccept(in ProfilerResult profilerResult, out MyClusterTree.MyCluster key)
-        {
-            key = null;
-
-            if (profilerResult.Category != ProfilerCategory.General) return false;
-            if (profilerResult.GameEntity is not MyClusterTree.MyCluster cluster)
-                return false;
-            key = cluster;
-            return true;
+            _activeProfilers.Add(this);
+            MyPhysics_StepWorlds.Enabled = true;
         }
 
         public override void Dispose()
         {
             base.Dispose();
-            Active = false;
+
+            _activeProfilers.Remove(this);
+            if (_activeProfilers.Count == 0)
+            {
+                MyPhysics_StepWorlds.Enabled = false;
+            }
+        }
+
+        protected override bool TryAccept(in ProfilerResult profilerResult, out MyClusterTree.MyCluster key)
+        {
+            key = null;
+
+            if (profilerResult.Category != ProfilerCategory.Physics) return false;
+            if (profilerResult.GameEntity is not MyClusterTree.MyCluster cluster) return false;
+
+            key = cluster;
+            return true;
         }
     }
 }

@@ -3,19 +3,19 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Havok;
 using NLog;
 using Profiler.Basics;
 using Profiler.Core;
 using Profiler.Interactive;
 using Profiler.Utils;
-using Sandbox.Engine.Physics;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Blocks;
 using Sandbox.Game.World;
 using Torch.Commands;
 using Torch.Commands.Permissions;
 using VRage.Game.ModAPI;
+using VRage.ModAPI;
+using VRageMath.Spatial;
 
 namespace Profiler
 {
@@ -263,6 +263,8 @@ namespace Profiler
             this.CatchAndReport(async () =>
             {
                 _args = new RequestParamParser(Context.Player, Context.Args);
+                var mask = new GameEntityMask(_args.PlayerMask, _args.GridMask, _args.FactionMask);
+
                 using (var profiler = new ClusterTreeProfiler())
                 using (ProfilerResultQueue.Profile(profiler))
                 {
@@ -273,9 +275,22 @@ namespace Profiler
                     await Task.Delay(TimeSpan.FromSeconds(_args.Seconds));
 
                     var result = profiler.GetResult();
-                    RespondResult(result.MapKeys(p => ((HkWorld)p.UserData).RigidBodies.MaxBy(c => c.Mass).GetSingleEntity()?.DisplayName));
+                    RespondResult(result.MapKeys(c => GetClusterName(c, mask)));
                 }
             });
+        }
+
+        static string GetClusterName(MyClusterTree.MyCluster cluster, GameEntityMask mask)
+        {
+            var entities = cluster
+                .GetEntities<IMyEntity>()
+                .Where(e => mask.AcceptEntity(e))
+                .ToArray();
+
+            var topEntityName = entities.MaxBy(c => c.Physics.Mass)?.DisplayName ?? "<empty>";
+            var count = Math.Max(0, entities.Length - 1);
+
+            return $"\"{topEntityName}\" (+{count} grids)";
         }
 
         void RespondResult(BaseProfilerResult<string> result)

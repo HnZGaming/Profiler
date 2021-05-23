@@ -31,7 +31,7 @@ namespace Profiler.Basics
         /// <summary>
         /// Mark the beginning of profiling. Must be called once to properly retrieve the profiling data.
         /// </summary>
-        public void MarkStart()
+        public virtual void MarkStart()
         {
             _startFrameCount = VRageUtils.CurrentGameFrameCount;
             _startTime = DateTime.UtcNow;

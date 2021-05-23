@@ -1,9 +1,10 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using Havok;
 using Sandbox;
 using Sandbox.Engine.Physics;
 using VRage.ModAPI;
-using VRageMath.Spatial;
+using VRageMath;
 
 namespace Profiler.Utils
 {
@@ -26,20 +27,26 @@ namespace Profiler.Utils
             return null;
         }
 
-        public static IEnumerable<T> GetEntities<T>(this MyClusterTree.MyCluster cluster) where T : IMyEntity
+        public static IEnumerable<IMyEntity> GetEntities(this HkWorld world) 
         {
-            var rigidbodies = ((HkWorld) cluster.UserData).RigidBodies;
-            var entities = new List<T>();
-            foreach (var rigidBody in rigidbodies)
-            foreach (var entity in rigidBody.GetAllEntities())
+            var entities = new List<IMyEntity>();
+            foreach (var rigidBody in world.RigidBodies)
             {
-                if (entity is T typedEntity)
-                {
-                    entities.Add(typedEntity);
-                }
+                var body = rigidBody.GetBody();
+                var entity = body.Entity;
+                entities.Add(entity);
             }
 
             return entities;
+        }
+
+        public static (double Size, Vector3D Center) GetBound(IEnumerable<IMyEntity> entities)
+        {
+            var minPos = entities.Aggregate(Vector3D.MaxValue, (s, n) => Vector3D.Min(s, n.GetPosition()));
+            var maxPos = entities.Aggregate(Vector3D.MinValue, (s, n) => Vector3D.Max(s, n.GetPosition()));
+            var size = Vector3D.Distance(minPos, maxPos);
+            var center = (minPos + maxPos) / 2;
+            return (size, center);
         }
 
         public static ulong CurrentGameFrameCount => MySandboxGame.Static.SimulationFrameCounter;

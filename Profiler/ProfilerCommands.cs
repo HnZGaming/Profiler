@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Havok;
 using NLog;
 using Profiler.Basics;
 using Profiler.Core;
@@ -14,17 +15,17 @@ using Sandbox.Game.World;
 using Torch.Commands;
 using Torch.Commands.Permissions;
 using VRage.Game.ModAPI;
-using VRage.ModAPI;
-using VRageMath.Spatial;
+using VRageMath;
 
 namespace Profiler
 {
     [Category("profile")]
-    public class ProfilerCommands : CommandModule
+    public sealed class ProfilerCommands : CommandModule
     {
         const string HelpText = "--secs=SampleLength --top=ReportEntries --faction=Tag --player=PlayerName --this --gps";
         static readonly Logger Log = LogManager.GetCurrentClassLogger();
-        static readonly GpsSendClient _gpsSendClient = new GpsSendClient();
+        static readonly GpsSendClient _gpsSendClient = new();
+        static readonly PhysicsTakeMeClient _takeMeClient = new();
 
         RequestParamParser _args;
 
@@ -265,32 +266,70 @@ namespace Profiler
                 _args = new RequestParamParser(Context.Player, Context.Args);
                 var mask = new GameEntityMask(_args.PlayerMask, _args.GridMask, _args.FactionMask);
 
-                using (var profiler = new ClusterTreeProfiler())
+                foreach (var arg in Context.Args)
+                {
+                    if (arg == "takeme=done")
+                    {
+                        _takeMeClient.DeleteGpss(Context.Player.IdentityId);
+                        return;
+                    }
+
+                    if (arg.StartsWith("--takeme="))
+                    {
+                        var indexStr = arg.Split('=')[1];
+                        var takeMeIndex = int.Parse(indexStr);
+                        await _takeMeClient.TakeMe(Context.Player, takeMeIndex);
+                        Context.Respond("Move to another cluster by `--takeme=N` or end session by `--takeme=done`");
+                        return;
+                    }
+                }
+
+                using (var profiler = new PhysicsProfiler())
                 using (ProfilerResultQueue.Profile(profiler))
                 {
                     Log.Warn("Physics profiling needs to sync all threads! This may cause performance impact.");
                     Context.Respond($"Started profiling clusters, result in {_args.Seconds}s");
 
+                    await GameLoopObserver.MoveToGameLoop();
+
                     profiler.MarkStart();
-                    await Task.Delay(TimeSpan.FromSeconds(_args.Seconds));
+
+                    // profile 3 frames
+                    await GameLoopObserver.MoveToGameLoop();
+                    await GameLoopObserver.MoveToGameLoop();
+                    await GameLoopObserver.MoveToGameLoop();
+
+                    profiler.MarkEnd();
+
+                    await TaskUtils.MoveToThreadPool();
 
                     var result = profiler.GetResult();
-                    RespondResult(result.MapKeys(c => GetClusterName(c, mask)));
+                    RespondResult(result.MapKeys(w => GetWorldName(w, mask)));
+
+                    Context.Respond("Teleport to clusters by `--takeme=N`");
+
+                    var topClusters = result.GetTopEntities(5).Select(e => e.Key).ToArray();
+                    _takeMeClient.Update(topClusters);
                 }
             });
         }
 
-        static string GetClusterName(MyClusterTree.MyCluster cluster, GameEntityMask mask)
+        static string GetWorldName(HkWorld world, GameEntityMask mask)
         {
-            var entities = cluster
-                .GetEntities<IMyEntity>()
+            var allEntities = world
+                .GetEntities()
                 .Where(e => mask.AcceptEntity(e))
                 .ToArray();
 
-            var topEntityName = entities.MaxBy(c => c.Physics.Mass)?.DisplayName ?? "<empty>";
-            var count = Math.Max(0, entities.Length - 1);
+            var (size, center) = VRageUtils.GetBound(allEntities);
+            var gps = MakeGpsString("Physics Profiler", center);
 
-            return $"\"{topEntityName}\" (+{count} grids)";
+            return $"{allEntities.Length} entities in {size / 1000:0.0}km; {gps}";
+        }
+
+        static string MakeGpsString(string name, Vector3D coord)
+        {
+            return $":GPS:{name}:{coord.X:0}:{coord.Y:0}:{coord.Z:0}:";
         }
 
         void RespondResult(BaseProfilerResult<string> result)

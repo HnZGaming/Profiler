@@ -15,7 +15,7 @@ namespace Profiler.Interactive
 {
     public sealed class PhysicsTakeMeClient
     {
-        const string GpsName = "Physics Profiler";
+        const string GpsNamePrefix = "Physics Profiler: ";
 
         readonly List<IMyEntity[]> _clusters;
 
@@ -60,7 +60,7 @@ namespace Profiler.Interactive
 
             foreach (var grid in entities)
             {
-                var gps = CreateGridGps(grid, GpsName, "", Color.Purple);
+                var gps = CreateGridGps(grid, $"{GpsNamePrefix}{grid.DisplayName}", "", Color.Purple);
                 MySession.Static.Gpss.SendAddGps(player.IdentityId, ref gps);
             }
 
@@ -72,7 +72,7 @@ namespace Profiler.Interactive
             var allGpss = MySession.Static.Gpss.GetAllGpss();
             foreach (var (identityId, gps) in allGpss)
             {
-                if (identityId == playerId && gps.Name == GpsName)
+                if (identityId == playerId && gps.Name.StartsWith(GpsNamePrefix))
                 {
                     MySession.Static.Gpss.SendDelete(identityId, gps.Hash);
                 }

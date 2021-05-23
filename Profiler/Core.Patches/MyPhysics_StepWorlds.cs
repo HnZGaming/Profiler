@@ -67,12 +67,14 @@ namespace Profiler.Core.Patches
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static void StepSingleWorldPrefix(ref HkWorld world, ref ProfilerToken? __localProfilerHandle)
         {
+            if (SimulatesParallel) return;
             __localProfilerHandle = ProfilerPatch.StartToken(world, MethodIndex, ProfilerCategory.Physics);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static void StepSingleWorldSuffix(ref ProfilerToken? __localProfilerHandle)
         {
+            if (SimulatesParallel) return;
             ProfilerPatch.StopToken(in __localProfilerHandle);
         }
     }

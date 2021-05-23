@@ -266,21 +266,36 @@ namespace Profiler
                 _args = new RequestParamParser(Context.Player, Context.Args);
                 var mask = new GameEntityMask(_args.PlayerMask, _args.GridMask, _args.FactionMask);
 
+                var tics = 10;
                 foreach (var arg in Context.Args)
                 {
-                    if (arg == "takeme=done")
+                    if (arg == "--takeme=done")
                     {
                         _takeMeClient.DeleteGpss(Context.Player.IdentityId);
+                        Context.Respond("Finished session");
                         return;
                     }
 
                     if (arg.StartsWith("--takeme="))
                     {
                         var indexStr = arg.Split('=')[1];
-                        var takeMeIndex = int.Parse(indexStr);
+                        if (!int.TryParse(indexStr, out var takeMeIndex))
+                        {
+                            throw new ArgumentException($"not a number: \"{indexStr}\"");
+                        }
+
                         await _takeMeClient.TakeMe(Context.Player, takeMeIndex);
                         Context.Respond("Move to another cluster by `--takeme=N` or end session by `--takeme=done`");
                         return;
+                    }
+
+                    if (arg.StartsWith("--tics="))
+                    {
+                        var ticsStr = arg.Split('=')[1];
+                        if (!int.TryParse(ticsStr, out tics))
+                        {
+                            throw new ArgumentException($"not a number: \"{ticsStr}\"");
+                        }
                     }
                 }
 
@@ -288,16 +303,16 @@ namespace Profiler
                 using (ProfilerResultQueue.Profile(profiler))
                 {
                     Log.Warn("Physics profiling needs to sync all threads! This may cause performance impact.");
-                    Context.Respond($"Started profiling clusters, result in {_args.Seconds}s");
+                    Context.Respond($"Started profiling clusters, result in {tics} frames (--tics=N)");
 
                     await GameLoopObserver.MoveToGameLoop();
 
                     profiler.MarkStart();
 
-                    // profile 3 frames
-                    await GameLoopObserver.MoveToGameLoop();
-                    await GameLoopObserver.MoveToGameLoop();
-                    await GameLoopObserver.MoveToGameLoop();
+                    for (var _ = 0; _ < tics; _++)
+                    {
+                        await GameLoopObserver.MoveToGameLoop();
+                    }
 
                     profiler.MarkEnd();
 

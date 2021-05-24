@@ -15,7 +15,6 @@ using Sandbox.Game.World;
 using Torch.Commands;
 using Torch.Commands.Permissions;
 using VRage.Game.ModAPI;
-using VRageMath;
 
 namespace Profiler
 {
@@ -61,7 +60,7 @@ namespace Profiler
                     await Task.Delay(TimeSpan.FromSeconds(_args.Seconds));
 
                     var result = profiler.GetResult();
-                    RespondResult(result.MapKeys(b => BlockTypeToString(b)));
+                    RespondResult(result, (b, _) => BlockTypeToString(b));
                 }
             });
         }
@@ -89,7 +88,7 @@ namespace Profiler
                     await Task.Delay(TimeSpan.FromSeconds(_args.Seconds));
 
                     var result = profiler.GetResult();
-                    RespondResult(result.MapKeys(k => k.BlockPairName));
+                    RespondResult(result, (k, _) => k.BlockPairName);
                 }
             });
         }
@@ -112,7 +111,7 @@ namespace Profiler
                     await Task.Delay(TimeSpan.FromSeconds(_args.Seconds));
 
                     var result = profiler.GetResult();
-                    RespondResult(result.MapKeys(g => GridToResultText(g)));
+                    RespondResult(result, (g, _) => GridToResultText(g));
 
                     // Sending GPS of laggy grids to caller
                     if (_args.SendGpsToPlayer)
@@ -178,7 +177,7 @@ namespace Profiler
                     await Task.Delay(TimeSpan.FromSeconds(_args.Seconds));
 
                     var result = profiler.GetResult();
-                    RespondResult(result.MapKeys(f => f.Tag));
+                    RespondResult(result, (f, _) => f.Tag);
                 }
             });
         }
@@ -201,7 +200,7 @@ namespace Profiler
                     await Task.Delay(TimeSpan.FromSeconds(_args.Seconds));
 
                     var result = profiler.GetResult();
-                    RespondResult(result.MapKeys(k => k.DisplayName));
+                    RespondResult(result, (k, _) => k.DisplayName);
                 }
             });
         }
@@ -224,7 +223,7 @@ namespace Profiler
                     await Task.Delay(TimeSpan.FromSeconds(_args.Seconds));
 
                     var result = profiler.GetResult();
-                    RespondResult(result.MapKeys(p => PbToString(p)));
+                    RespondResult(result, (p, _) => PbToString(p));
                 }
             });
         }
@@ -252,7 +251,7 @@ namespace Profiler
                     await Task.Delay(TimeSpan.FromSeconds(_args.Seconds));
 
                     var result = profiler.GetResult();
-                    RespondResult(result.MapKeys(p => p.GetType().Name));
+                    RespondResult(result, (p, _) => p.GetType().Name);
                 }
             });
         }
@@ -319,7 +318,7 @@ namespace Profiler
                     await TaskUtils.MoveToThreadPool();
 
                     var result = profiler.GetResult();
-                    RespondResult(result.MapKeys(w => GetWorldName(w, mask)));
+                    RespondResult(result, (w, i) => GetWorldName(w, i, mask));
 
                     Context.Respond("Teleport to clusters by `--takeme=N`");
 
@@ -329,37 +328,31 @@ namespace Profiler
             });
         }
 
-        static string GetWorldName(HkWorld world, GameEntityMask mask)
+        static string GetWorldName(HkWorld world, int index, GameEntityMask mask)
         {
-            var allEntities = world
+            var entities = world
                 .GetEntities()
                 .Where(e => mask.AcceptEntity(e))
                 .ToArray();
 
-            var (size, center) = VRageUtils.GetBound(allEntities);
-            var gps = MakeGpsString("Physics Profiler", center);
-
-            return $"{allEntities.Length} entities in {size / 1000:0.0}km; {gps}";
+            var count = entities.Length;
+            var (size, _) = VRageUtils.GetBound(entities);
+            return $"{index}: {count} entities in {size / 1000:0.0}km";
         }
 
-        static string MakeGpsString(string name, Vector3D coord)
-        {
-            return $":GPS:{name}:{coord.X:0}:{coord.Y:0}:{coord.Z:0}:";
-        }
-
-        void RespondResult(BaseProfilerResult<string> result)
+        void RespondResult<T>(BaseProfilerResult<T> result, Func<T, int, string> toName)
         {
             Log.Info("Got result from profiling via command");
 
             var messageBuilder = new StringBuilder();
             messageBuilder.AppendLine($"Finished profiling; past {result.TotalTime:0.00}ms ({result.TotalTime / 1000:0.00}s) and {result.TotalFrameCount} frames");
 
-            foreach (var (name, profilerEntry) in result.GetTopEntities(_args.Top))
+            foreach (var ((item, profilerEntry), index) in result.GetTopEntities(_args.Top).Select((v, i) => (v, i)))
             {
                 var totalTime = $"{profilerEntry.TotalTime:0.00}ms";
                 var mainThreadTime = $"{profilerEntry.MainThreadTime / result.TotalFrameCount:0.00}ms/f";
-                var offThreadTime = $"{profilerEntry.OffThreadTime / result.TotalFrameCount:0.00}ms/f";
-                messageBuilder.AppendLine($"'{name}' took {mainThreadTime} main, {offThreadTime} parallel (total {totalTime})");
+                var name = toName(item, index);
+                messageBuilder.AppendLine($"{name}: {mainThreadTime} (total {totalTime})");
             }
 
             Log.Info("Finished showing profiler result via command");

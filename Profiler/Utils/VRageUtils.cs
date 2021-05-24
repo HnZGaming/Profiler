@@ -27,7 +27,7 @@ namespace Profiler.Utils
             return null;
         }
 
-        public static IEnumerable<IMyEntity> GetEntities(this HkWorld world) 
+        public static IEnumerable<IMyEntity> GetEntities(this HkWorld world)
         {
             var entities = new List<IMyEntity>();
             foreach (var rigidBody in world.RigidBodies)
@@ -47,6 +47,11 @@ namespace Profiler.Utils
             var size = Vector3D.Distance(minPos, maxPos);
             var center = (minPos + maxPos) / 2;
             return (size, center);
+        }
+
+        public static string MakeGpsString(string name, Vector3D coord)
+        {
+            return $":GPS:{name}:{coord.X:0}:{coord.Y:0}:{coord.Z:0}:";
         }
 
         public static ulong CurrentGameFrameCount => MySandboxGame.Static.SimulationFrameCounter;
